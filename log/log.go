@@ -4,7 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func NewLogger(prefix string) *log.Logger {
+func NewLogger() *log.Logger {
 	logger := log.New()
 	logger.SetFormatter(&log.TextFormatter{
 		ForceColors:               true,

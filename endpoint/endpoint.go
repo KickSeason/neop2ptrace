@@ -2,12 +2,11 @@ package endpoint
 
 import (
 	"net"
-	"spamp2p/transaction"
 	"time"
 
 	"github.com/CityOfZion/neo-go/config"
 
-	"spamp2p/log"
+	"neop2ptrace/log"
 
 	"github.com/CityOfZion/neo-go/pkg/network"
 	"github.com/CityOfZion/neo-go/pkg/network/payload"
@@ -30,6 +29,7 @@ func NewEndpoint(srv string) *Endpoint {
 	}
 }
 func (e *Endpoint) Start() {
+	logger.Println("tcp connect", e.server)
 	con, err := net.DialTimeout("tcp", e.server, 5*time.Second)
 	if err != nil {
 		logger.Println(err)
@@ -59,6 +59,19 @@ func (e *Endpoint) handleMessage(p network.Peer, msg *network.Message) error {
 		p.WriteMsg(vack)
 		e.connected = true
 		return nil
+	case network.CMDAddr:
+		addrs := msg.Payload.(*payload.AddressList)
+		logger.Println(addrs.Addrs)
+		e.SendGetMempool()
+		return nil
+	case network.CMDVerack:
+		e.SendGetAddr()
+		return nil
+	case network.CMDInv:
+		hashes := msg.Payload.(*payload.Inventory)
+		logger.Println(hashes.Hashes)
+		e.Close()
+		return nil
 	default:
 		return nil
 	}
@@ -77,11 +90,22 @@ func (e *Endpoint) handleCon(con net.Conn) error {
 	}
 }
 
-func (e *Endpoint) SendTx(tx transaction.TxWrapper) {
+func (e *Endpoint) SendGetAddr() {
 	if !e.connected {
 		return
 	}
-	//logger.Printf("[Endpoint] send tx. srv: %s\n", e.server)
-	txmsg := network.NewMessage(e.magic, network.CMDTX, tx)
-	e.p.WriteMsg(txmsg)
+	getaddr := network.NewMessage(e.magic, network.CMDGetAddr, nil)
+	e.p.WriteMsg(getaddr)
+}
+
+func (e *Endpoint) SendGetMempool() {
+	if !e.connected {
+		return
+	}
+	mp := network.NewMessage(e.magic, network.CMDMemPool, nil)
+	e.p.WriteMsg(mp)
+}
+
+func (e *Endpoint) Close() {
+	e.conn.Close()
 }

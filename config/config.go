@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"spamp2p/log"
+	"neop2ptrace/log"
 )
 
 var Servers []string
