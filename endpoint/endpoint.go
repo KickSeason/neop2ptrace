@@ -13,19 +13,22 @@ import (
 )
 
 type Endpoint struct {
+	Addrs     []string
 	connected bool
 	server    string
 	magic     config.NetMode
 	conn      net.Conn
 	p         network.Peer
+	finish    chan<- int
 }
 
 var logger = log.NewLogger()
 
-func NewEndpoint(srv string) *Endpoint {
+func NewEndpoint(srv string, ch chan<- int) *Endpoint {
 	return &Endpoint{
 		connected: false,
 		server:    srv,
+		finish:    ch,
 	}
 }
 func (e *Endpoint) Start() {
@@ -53,7 +56,7 @@ func (e *Endpoint) handleMessage(p network.Peer, msg *network.Message) error {
 	switch cmd {
 	case network.CMDVersion:
 		e.magic = msg.Magic
-		v := network.NewMessage(msg.Magic, network.CMDVersion, payload.NewVersion(1234, 0, "/Neo:2.10.1/", 0, false))
+		v := network.NewMessage(msg.Magic, network.CMDVersion, payload.NewVersion(100000, 0, "/Neo:2.10.1/", 0, false))
 		vack := network.NewMessage(msg.Magic, network.CMDVerack, nil)
 		p.WriteMsg(v)
 		p.WriteMsg(vack)
@@ -61,11 +64,17 @@ func (e *Endpoint) handleMessage(p network.Peer, msg *network.Message) error {
 		return nil
 	case network.CMDAddr:
 		addrs := msg.Payload.(*payload.AddressList)
-		logger.Println(addrs.Addrs)
-		e.SendGetMempool()
+		for _, v := range addrs.Addrs {
+			e.Addrs = append(e.Addrs, v.Endpoint.String())
+		}
+		close(e.finish)
+		e.Close()
+		// e.SendGetMempool()
 		return nil
 	case network.CMDVerack:
-		e.SendGetAddr()
+		if e.connected {
+			e.SendGetAddr()
+		}
 		return nil
 	case network.CMDInv:
 		hashes := msg.Payload.(*payload.Inventory)
@@ -98,13 +107,13 @@ func (e *Endpoint) SendGetAddr() {
 	e.p.WriteMsg(getaddr)
 }
 
-func (e *Endpoint) SendGetMempool() {
-	if !e.connected {
-		return
-	}
-	mp := network.NewMessage(e.magic, network.CMDMemPool, nil)
-	e.p.WriteMsg(mp)
-}
+// func (e *Endpoint) SendGetMempool() {
+// 	if !e.connected {
+// 		return
+// 	}
+// 	mp := network.NewMessage(e.magic, network.CMDMemPool, nil)
+// 	e.p.WriteMsg(mp)
+// }
 
 func (e *Endpoint) Close() {
 	e.conn.Close()

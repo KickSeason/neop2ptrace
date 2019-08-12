@@ -7,7 +7,7 @@ import (
 	"neop2ptrace/log"
 )
 
-var Servers []string
+var Seed string
 var logger = log.NewLogger()
 
 func Load(path string) {
@@ -17,13 +17,13 @@ func Load(path string) {
 		return
 	}
 	c := struct {
-		Servers []string `json: "servers"`
+		Seed string `json: "seed"`
 	}{}
 	err = json.Unmarshal(data, &c)
 	if err != nil {
 		logger.Fatalln("[config] invalid config.json")
 		return
 	}
-	Servers = c.Servers
-	logger.Printf("[config] load configuration success. servers: %s", Servers)
+	Seed = c.Seed
+	logger.Printf("[config] load configuration success. server: %s", Seed)
 }

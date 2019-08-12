@@ -1,5 +1,3 @@
 {
-    "servers": [
-        "seed9.ngd.network:10333"
-    ]
+    "seed": "seed3.ngd.network:10333"
 }
