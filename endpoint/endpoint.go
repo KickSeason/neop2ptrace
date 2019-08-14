@@ -36,6 +36,7 @@ func (e *Endpoint) Start() {
 	con, err := net.DialTimeout("tcp", e.server, 5*time.Second)
 	if err != nil {
 		logger.Println(err)
+		close(e.finish)
 		return
 	}
 	e.conn = con
@@ -45,6 +46,8 @@ func (e *Endpoint) Start() {
 			if err != nil {
 				logger.Println(err)
 				e.connected = false
+				close(e.finish)
+				e.Close()
 				return
 			}
 		}
@@ -67,7 +70,6 @@ func (e *Endpoint) handleMessage(p network.Peer, msg *network.Message) error {
 		for _, v := range addrs.Addrs {
 			e.Addrs = append(e.Addrs, v.Endpoint.String())
 		}
-		close(e.finish)
 		e.Close()
 		// e.SendGetMempool()
 		return nil
