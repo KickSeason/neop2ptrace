@@ -1,42 +1,30 @@
 package main
 
 import (
-	"fmt"
+	"neop2ptrace/api"
 	"neop2ptrace/config"
 	"neop2ptrace/endpoint"
 	"neop2ptrace/log"
-	"neop2ptrace/nmap"
+	"neop2ptrace/nodemap"
 	"strings"
 )
 
-var seed string
-var node *endpoint.Endpoint
-var count = 0
 var logger = log.NewLogger()
-var nodeMap = nmap.NewMap()
+var nodeMap = nodemap.NewNodeMap()
 
 func main() {
 	config.Load("./config.json")
-	seed = config.Seed
+	seed := config.Seed
 	logger.Println("start")
-	nodes := []string{seed}
-	for i := 0; i < len(nodes); i++ {
-		ch := make(chan int)
-		node = endpoint.NewEndpoint(nodes[i], ch)
-		node.Start()
-		if _, ok := <-ch; !ok {
-			addrs := filter(node.Addrs)
-			fmt.Println(addrs)
-			for _, addr := range addrs {
-				nodes = append(nodes, addr)
-			}
-			if 0 < len(addrs) {
-				nodeMap.AddNode(nodes[i], addrs)
-			}
-		}
-		fmt.Println(len(nodes))
+	getAddrs(seed)
+	it := nodeMap.Iterator()
+	for !it.End() {
+		getAddrs(it.Value().Address())
+		it.Next()
 	}
-	fmt.Println(nodeMap.ToJson())
+	logger.Println(nodeMap.ToJson())
+	srv := api.NewApiServer("127.0.0.1", config.Port, &nodeMap)
+	srv.Start()
 }
 
 func filter(addrs []string) []string {
@@ -50,11 +38,26 @@ func filter(addrs []string) []string {
 	return rr
 }
 
-func contain(addrs []string, addr string) bool {
-	for _, v := range addrs {
-		if v == addr {
-			return true
+func getAddrs(addr string) {
+	ch := make(chan int)
+	ep := endpoint.NewEndpoint(addr, ch)
+	ep.Start()
+	if _, ok := <-ch; !ok {
+		addrs := filter(ep.Addrs)
+		node, err := nodemap.NewNode(addr)
+		if err != nil {
+			logger.Errorln(err)
+			return
 		}
+		peers := []nodemap.Node{}
+		for _, v := range addrs {
+			n, err := nodemap.NewNode(v)
+			if err != nil {
+				logger.Errorln(err)
+				continue
+			}
+			peers = append(peers, n)
+		}
+		nodeMap.AddNode(node, peers)
 	}
-	return false
 }

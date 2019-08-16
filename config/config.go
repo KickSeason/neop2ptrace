@@ -8,6 +8,7 @@ import (
 )
 
 var Seed string
+var Port int
 var logger = log.NewLogger()
 
 func Load(path string) {
@@ -18,6 +19,7 @@ func Load(path string) {
 	}
 	c := struct {
 		Seed string `json: "seed"`
+		Port int    `json: "port"`
 	}{}
 	err = json.Unmarshal(data, &c)
 	if err != nil {
@@ -25,5 +27,6 @@ func Load(path string) {
 		return
 	}
 	Seed = c.Seed
-	logger.Printf("[config] load configuration success. server: %s", Seed)
+	Port = c.Port
+	logger.Printf("[config] load configuration success. seed: %s, port: %d", Seed, Port)
 }
