@@ -1,2 +1,4 @@
-# spamp2p
-send invoke tx through p2p
+# p2p trace
+find all neo nodes
+# TODO
+* Shorten traversal time
