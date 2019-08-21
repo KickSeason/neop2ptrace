@@ -1,8 +1,12 @@
 package nodemap
 
-import "strconv"
+import (
+	"strconv"
+	"sync"
+)
 
 type Matrix struct {
+	mutex  sync.Mutex
 	direct bool
 	order  []uint64
 	m      [][]uint8
@@ -31,8 +35,10 @@ func (m *Matrix) AddEdge(from, to uint64) {
 			from, to = to, from
 		}
 	}
+	m.mutex.Lock()
 	fromIndex := m.orderIndex(from)
 	toIndex := m.orderIndex(to)
+
 	for len(m.m) <= fromIndex {
 		m.m = append(m.m, []uint8{})
 	}
@@ -42,19 +48,20 @@ func (m *Matrix) AddEdge(from, to uint64) {
 	}
 	fromRecord[toIndex] = 1
 	m.m[fromIndex] = fromRecord
+	m.mutex.Unlock()
 }
 
-func (m Matrix) Edges(from uint64) []uint64 {
-	result := []uint64{}
-	fromIndex := m.orderIndex(from)
-	fromRecord := m.m[fromIndex]
-	for i, v := range fromRecord {
-		if v == 1 {
-			result = append(result, m.order[i])
-		}
-	}
-	return result
-}
+// func (m Matrix) Edges(from uint64) []uint64 {
+// 	result := []uint64{}
+// 	fromIndex := m.orderIndex(from)
+// 	fromRecord := m.m[fromIndex]
+// 	for i, v := range fromRecord {
+// 		if v == 1 {
+// 			result = append(result, m.order[i])
+// 		}
+// 	}
+// 	return result
+// }
 
 func (m Matrix) AllEdges() [][]uint64 {
 	result := [][]uint64{}
@@ -84,7 +91,7 @@ func (m Matrix) ToJson() string {
 		str += "\"" + "target" + "\"" + ":"
 		str += "\"" + strconv.Itoa(int(v[1])) + "\","
 		str += "\"" + "value" + "\"" + ":"
-		str += "5"
+		str += "1"
 		str += "}"
 	}
 	str += "]"

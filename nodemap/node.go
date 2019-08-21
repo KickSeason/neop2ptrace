@@ -21,7 +21,7 @@ func id(ip net.IP, port uint16) uint64 {
 	binary.LittleEndian.PutUint16(parr, port)
 	idarr := append(ip.To4(), parr...)
 	idarr = append(idarr, []byte{0, 0}...)
-	id := binary.LittleEndian.Uint64(idarr)
+	id := binary.BigEndian.Uint64(idarr)
 	return id
 }
 
@@ -54,6 +54,8 @@ func (n Node) ToJson() string {
 	str := "{"
 	str += "\"" + "id" + "\"" + ":"
 	str += "\"" + strconv.Itoa(int(n.id)) + "\","
+	str += "\"" + "name" + "\"" + ":"
+	str += "\"" + n.ip.String() + ":" + strconv.Itoa(int(n.port)) + "\","
 	str += "\"" + "group" + "\"" + ":"
 	str += strconv.Itoa(int(n.group))
 	str += "}"

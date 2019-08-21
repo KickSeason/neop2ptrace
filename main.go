@@ -7,24 +7,40 @@ import (
 	"neop2ptrace/log"
 	"neop2ptrace/nodemap"
 	"strings"
+	"sync"
 )
 
 var logger = log.NewLogger()
-var nodeMap = nodemap.NewNodeMap()
 
 func main() {
 	config.Load("./config.json")
 	seed := config.Seed
 	logger.Println("start")
-	getAddrs(seed)
-	it := nodeMap.Iterator()
-	for !it.End() {
-		getAddrs(it.Value().Address())
-		it.Next()
-	}
+	var nodeMap = nodemap.NewNodeMap()
+	getAddrs(seed, &nodeMap)
+	travel(&nodeMap)
 	logger.Println(nodeMap.ToJson())
 	srv := api.NewApiServer("127.0.0.1", config.Port, &nodeMap)
 	srv.Start()
+}
+
+func travel(nm *nodemap.NodeMap) {
+	it := nm.Iterator()
+	for i := 0; i < nm.Count(); i++ {
+		var wg sync.WaitGroup
+		for j := 0; !it.End() && j < 10; j++ {
+			wg.Add(1)
+			addr := it.Value().Address()
+			go func() {
+				getAddrs(addr, nm)
+				wg.Done()
+			}()
+			it.Next()
+			i++
+		}
+		wg.Wait()
+	}
+
 }
 
 func filter(addrs []string) []string {
@@ -38,7 +54,7 @@ func filter(addrs []string) []string {
 	return rr
 }
 
-func getAddrs(addr string) {
+func getAddrs(addr string, nm *nodemap.NodeMap) {
 	ch := make(chan int)
 	ep := endpoint.NewEndpoint(addr, ch)
 	ep.Start()
@@ -58,6 +74,6 @@ func getAddrs(addr string) {
 			}
 			peers = append(peers, n)
 		}
-		nodeMap.AddNode(node, peers)
+		nm.AddNode(node, peers)
 	}
 }

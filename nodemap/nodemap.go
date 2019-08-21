@@ -18,6 +18,16 @@ func NewNodeMap() NodeMap {
 }
 
 func (nm *NodeMap) AddNode(node Node, peers []Node) {
+	conns := len(peers)
+	if 30 < conns {
+		node.group = 4
+	} else if 20 < conns {
+		node.group = 3
+	} else if 10 < conns {
+		node.group = 2
+	} else {
+		node.group = 1
+	}
 	nm.nodes.AddNode(node)
 	for _, v := range peers {
 		nm.nodes.AddNode(v)
@@ -49,5 +59,5 @@ func (nm *NodeMap) String() string {
 }
 
 func (nm *NodeMap) Start() {
-	
+
 }

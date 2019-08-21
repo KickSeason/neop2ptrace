@@ -11,34 +11,29 @@ func (nm *NodeMap) Iterator() Iterator {
 		nmp:   nm,
 		index: 0,
 	}
-	if it.nmp.Count() <= it.index {
-		it.end = true
-	}
 	return it
 }
 
 func (it *Iterator) Next() {
-	if it.end {
+	if it.End() {
 		return
 	}
 	it.index++
-	if it.nmp.Count() <= it.index {
-		it.end = true
-		return
-	}
 }
 
 func (it *Iterator) Value() Node {
-	if it.end {
-		return Node{}
+	n := Node{}
+	if !it.End() {
+		n = it.nmp.nodes.nodes[it.index]
 	}
-	if it.nmp.Count() <= it.index {
-		it.end = true
-		return Node{}
-	}
-	return it.nmp.nodes.nodes[it.index]
+	return n
 }
 
 func (it *Iterator) End() bool {
+	if it.nmp.Count() <= it.index {
+		it.end = true
+	} else {
+		it.end = false
+	}
 	return it.end
 }

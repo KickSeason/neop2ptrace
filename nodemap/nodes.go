@@ -1,6 +1,9 @@
 package nodemap
 
+import "sync"
+
 type Nodes struct {
+	mutex sync.Mutex
 	nodes []Node
 	nmap  map[uint64]int
 }
@@ -12,8 +15,13 @@ func NewNodes() Nodes {
 }
 
 func (ns *Nodes) AddNode(n Node) {
+	ns.mutex.Lock()
+	defer ns.mutex.Unlock()
 	if index, ok := ns.nmap[n.ID()]; ok {
-		ns.nodes[index] = n
+		// need to improve
+		if ns.nodes[index].group < n.group {
+			ns.nodes[index].group = n.group
+		}
 		return
 	}
 	ns.nodes = append(ns.nodes, n)
