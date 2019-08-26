@@ -66,6 +66,9 @@ func (m *Matrix) AddEdge(from, to uint64) {
 func (m Matrix) AllEdges() [][]uint64 {
 	result := [][]uint64{}
 	for i, v := range m.m {
+		if len(m.order) <= i {
+			continue
+		}
 		from := m.order[i]
 		for j, f := range v {
 			if f == 1 {
